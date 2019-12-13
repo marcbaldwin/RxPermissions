@@ -8,7 +8,9 @@ import android.os.Build
 import androidx.annotation.MainThread
 import androidx.core.app.ActivityCompat
 import androidx.fragment.app.Fragment
+import io.reactivex.Completable
 import io.reactivex.Observable
+import io.reactivex.Single
 import io.reactivex.subjects.BehaviorSubject
 
 /**
@@ -33,22 +35,28 @@ class RxPermissions(private val context: Context) {
     }
 
     /**
-     * @return an observable that completes when a given permission is granted
+     * @return a Completable that completes when a given permission is granted
      */
     @MainThread
-    fun granted(permission: String): Observable<Boolean> {
-        return observe(permission).filter { it }.take(1)
+    fun onGranted(permission: String): Completable {
+        return observe(permission).filter { it } .ignoreElements()
     }
 
+    /**
+     * @return a Single that emits the result of the request
+     */
     @MainThread
-    fun request(activity: Activity, permission: String): Observable<Boolean> {
+    fun request(permission: String, activity: Activity): Single<Boolean> {
         return request(permission) {
             ActivityCompat.requestPermissions(activity, arrayOf(permission), REQUEST_CODE)
         }
     }
 
+    /**
+     * @return a Single that emits the result of the request
+     */
     @MainThread
-    fun request(fragment: Fragment, permission: String): Observable<Boolean> {
+    fun request(permission: String, fragment: Fragment): Single<Boolean> {
         return request(permission) {
             fragment.requestPermissions(arrayOf(permission), REQUEST_CODE)
         }
@@ -58,8 +66,8 @@ class RxPermissions(private val context: Context) {
     fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray): Boolean {
         if (requestCode == REQUEST_CODE) {
             for (index in permissions.indices) {
-                subjectForPermission(permissions[index])
-                        .onNext(grantResults[index] == PackageManager.PERMISSION_GRANTED)
+                val result = grantResults[index] == PackageManager.PERMISSION_GRANTED
+                subjectForPermission(permissions[index]).onNext(result)
             }
             return true
         }
@@ -70,13 +78,12 @@ class RxPermissions(private val context: Context) {
         return Build.VERSION.SDK_INT < Build.VERSION_CODES.M || isGranted(permission)
     }
 
-    private fun request(permission: String, request: () -> Unit): Observable<Boolean> {
-        return if (hasPermission(permission)) {
-            Observable.just(true)
-        } else {
-            observe(permission).skip(1).take(1).doOnSubscribe {
-                request()
-            }
+    private fun request(permission: String, request: () -> Unit): Single<Boolean> {
+        return if (hasPermission(permission)) Single.just(true)
+        else {
+            observe(permission)
+                    .skip(1).take(1).singleOrError()
+                    .doOnSubscribe { request() }
         }
     }
 
