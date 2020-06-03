@@ -27,7 +27,7 @@ class RxPermissions(private val context: Context) {
     private val subjects: MutableMap<String, BehaviorSubject<Boolean>> = HashMap(6)
 
     /**
-     * @return an observable that emits the state changes for a given permission
+     * @return an Observable that emits the state changes for a given permission
      */
     @MainThread
     fun observe(permission: String): Observable<Boolean> {
@@ -39,7 +39,7 @@ class RxPermissions(private val context: Context) {
      */
     @MainThread
     fun onGranted(permission: String): Completable {
-        return observe(permission).filter { it } .ignoreElements()
+        return observe(permission).filter { it }.take(1).ignoreElements()
     }
 
     /**
