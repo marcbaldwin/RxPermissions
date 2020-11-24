@@ -82,8 +82,8 @@ class RxPermissions(private val context: Context) {
         return if (hasPermission(permission)) Single.just(true)
         else {
             observe(permission)
-                    .skip(1).take(1).singleOrError()
-                    .doOnSubscribe { request() }
+                .skip(1).take(1).singleOrError()
+                .doOnSubscribe { request() }
         }
     }
 
@@ -102,4 +102,3 @@ class RxPermissions(private val context: Context) {
         return context.checkSelfPermission(permission) == PackageManager.PERMISSION_GRANTED
     }
 }
-
