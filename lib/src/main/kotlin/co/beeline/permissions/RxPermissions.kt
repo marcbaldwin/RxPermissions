@@ -46,7 +46,7 @@ class RxPermissions(private val context: Context) {
      * @return a Single that emits the result of the request
      */
     @MainThread
-    fun request(vararg permissions: String, activity: Activity): Single<Boolean> {
+    fun request(activity: Activity, vararg permissions: String): Single<Boolean> {
         return request(*permissions) {
             ActivityCompat.requestPermissions(activity, permissions, REQUEST_CODE)
         }
@@ -56,7 +56,7 @@ class RxPermissions(private val context: Context) {
      * @return a Single that emits the result of the request
      */
     @MainThread
-    fun request(vararg permissions: String, fragment: Fragment): Single<Boolean> {
+    fun request(fragment: Fragment, vararg permissions: String): Single<Boolean> {
         return request(*permissions) {
             fragment.requestPermissions(permissions, REQUEST_CODE)
         }
