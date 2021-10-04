@@ -46,9 +46,9 @@ class RxPermissions(private val context: Context) {
      * @return a Single that emits the result of the request
      */
     @MainThread
-    fun request(permission: String, activity: Activity): Single<Boolean> {
-        return request(permission) {
-            ActivityCompat.requestPermissions(activity, arrayOf(permission), REQUEST_CODE)
+    fun request(vararg permissions: String, activity: Activity): Single<Boolean> {
+        return request(*permissions) {
+            ActivityCompat.requestPermissions(activity, permissions, REQUEST_CODE)
         }
     }
 
@@ -56,9 +56,9 @@ class RxPermissions(private val context: Context) {
      * @return a Single that emits the result of the request
      */
     @MainThread
-    fun request(permission: String, fragment: Fragment): Single<Boolean> {
-        return request(permission) {
-            fragment.requestPermissions(arrayOf(permission), REQUEST_CODE)
+    fun request(vararg permissions: String, fragment: Fragment): Single<Boolean> {
+        return request(*permissions) {
+            fragment.requestPermissions(permissions, REQUEST_CODE)
         }
     }
 
@@ -74,16 +74,25 @@ class RxPermissions(private val context: Context) {
         return false
     }
 
+    fun hasPermissions(vararg permissions: String): Boolean {
+        return permissions.fold(true) { all, permission -> all && hasPermission(permission) }
+    }
+
     fun hasPermission(permission: String): Boolean {
         return Build.VERSION.SDK_INT < Build.VERSION_CODES.M || isGranted(permission)
     }
 
-    private fun request(permission: String, request: () -> Unit): Single<Boolean> {
-        return if (hasPermission(permission)) Single.just(true)
+    private fun request(vararg permissions: String, request: () -> Unit): Single<Boolean> {
+        return if (hasPermissions(*permissions)) Single.just(true)
         else {
-            observe(permission)
-                .skip(1).take(1).singleOrError()
-                .doOnSubscribe { request() }
+            Observable
+                    .combineLatest(
+                            permissions.map { observe(it).skip(1).take(1) }
+                    ) { results ->
+                        results.fold(true) { all, result -> all && (result as Boolean) }
+                    }
+                    .take(1).singleOrError()
+                    .doOnSubscribe { request() }
         }
     }
 
