@@ -1,11 +1,13 @@
 apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
+apply plugin: 'maven-publish'
 
 android {
     compileSdkVersion 31
 
     defaultConfig {
         minSdkVersion 16
+        targetSdkVersion 31
     }
 
     sourceSets {
@@ -26,4 +28,16 @@ dependencies {
     api 'io.reactivex.rxjava2:rxjava:2.2.19'
 
     testImplementation 'junit:junit:4.13.1'
+}
+
+afterEvaluate {
+    publishing {
+        publications {
+            release(MavenPublication) {
+                from components.release
+                groupId = 'com.github.marcbaldwin'
+                artifactId = 'RxPermissions'
+            }
+        }
+    }
 }
