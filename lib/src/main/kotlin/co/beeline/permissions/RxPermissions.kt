@@ -57,9 +57,7 @@ class RxPermissions(private val context: Context) {
      */
     @MainThread
     fun request(fragment: Fragment, vararg permissions: String): Single<Boolean> {
-        return request(*permissions) {
-            fragment.requestPermissions(permissions, REQUEST_CODE)
-        }
+        return request(fragment.requireActivity(), *permissions)
     }
 
     @MainThread
